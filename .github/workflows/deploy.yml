@@ -13,13 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install PHP dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+
       - name: Build frontend
         run: |
           npm install
           npm run build
 
-      - name: Optimize
+      - name: Laravel optimize
         run: |
+          php artisan key:generate --force || true
+          php artisan migrate --force
           php artisan config:clear
           php artisan config:cache
           php artisan route:cache
