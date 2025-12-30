@@ -36,7 +36,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('obat-kunjungan', ObatKunjunganController::class);
     Route::resource('kunjungan', KunjunganController::class);
     Route::resource('pembayaran', PembayaranController::class);
-    Route::resource('roles', RolesController::class)->except(['create', 'show', 'edit']);
+    // Route::resource('roles', RolesController::class)->except(['create', 'show', 'edit']);
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
 });
 
