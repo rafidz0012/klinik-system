@@ -25,8 +25,17 @@ jobs:
           npm install
           npm run build
 
-      - name: Laravel deploy
+      - name: Sync project to web directory
         run: |
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            ./ /var/www/klinik-system/
+
+      - name: Laravel optimize (production)
+        run: |
+          cd /var/www/klinik-system
           php artisan config:clear
           php artisan config:cache
           php artisan route:cache
