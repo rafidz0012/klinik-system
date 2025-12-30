@@ -13,18 +13,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install PHP dependencies
+      - name: Copy env file
         run: |
-          composer install --no-interaction --prefer-dist --optimize-autoloader
+          cp /var/www/klinik-system/.env .env
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Build frontend
         run: |
           npm install
           npm run build
 
-      - name: Laravel optimize
+      - name: Laravel deploy
         run: |
-          php artisan key:generate --force || true
           php artisan migrate --force
           php artisan config:clear
           php artisan config:cache
