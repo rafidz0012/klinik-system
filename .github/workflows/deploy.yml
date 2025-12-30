@@ -1,4 +1,4 @@
-name: Deploy Laravel (Self Hosted)
+name: Deploy Laravel (Self Hosted - Zero Downtime)
 
 on:
   push:
@@ -13,30 +13,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy env file
-        run: |
-          cp /var/www/klinik-system/.env .env
+      - name: Set release name
+        id: release
+        run: echo "RELEASE=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
 
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Build frontend
+      - name: Prepare release directory
         run: |
+          mkdir -p /var/www/klinik-system/releases/${RELEASE}
+          rsync -r \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            ./ /var/www/klinik-system/releases/${RELEASE}/
+
+      - name: Link shared files
+        run: |
+          ln -sfn /var/www/klinik-system/shared/.env /var/www/klinik-system/releases/${RELEASE}/.env
+          ln -sfn /var/www/klinik-system/shared/storage /var/www/klinik-system/releases/${RELEASE}/storage
+
+      - name: Install dependencies
+        run: |
+          cd /var/www/klinik-system/releases/${RELEASE}
+          composer install --no-dev --optimize-autoloader
           npm install
           npm run build
 
-      - name: Sync project to web directory
+      - name: Laravel optimize
         run: |
-          rsync -av --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            ./ /var/www/klinik-system/
+          cd /var/www/klinik-system/releases/${RELEASE}
+          php artisan migrate --force
+          php artisan optimize
 
-      - name: Laravel optimize (production)
+      - name: Switch release (atomic)
         run: |
-          cd /var/www/klinik-system
-          php artisan config:clear
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:clear
+          ln -sfn /var/www/klinik-system/releases/${RELEASE} /var/www/klinik-system/current
