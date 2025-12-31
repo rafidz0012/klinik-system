@@ -39,4 +39,3 @@ jobs:
         run: |
           cd /var/www/klinik-system
           php artisan optimize:clear
-          php artisan optimize
