@@ -1,4 +1,4 @@
-name: Deploy Laravel (Simple)
+name: Deploy Laravel (Simple & Correct)
 
 on:
   push:
@@ -13,12 +13,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install backend dependencies
+        run: composer install --no-dev --optimize-autoloader
+
       - name: Build frontend
         run: |
           npm install
           npm run build
 
-      - name: Laravel optimize
+      - name: Sync project to server
+        run: |
+          rsync -r \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='storage' \
+            --exclude='bootstrap/cache' \
+            ./ /var/www/klinik-system/
+
+      - name: Fix permissions
+        run: |
+          sudo chown -R www-data:www-data /var/www/klinik-system/storage /var/www/klinik-system/bootstrap/cache
+          sudo chmod -R 775 /var/www/klinik-system/storage /var/www/klinik-system/bootstrap/cache
+
+      - name: Laravel clear & optimize
         run: |
           cd /var/www/klinik-system
+          php artisan optimize:clear
           php artisan optimize
