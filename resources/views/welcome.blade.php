@@ -49,7 +49,7 @@
 </head>
 <body>
     <div class="welcome-box">
-        <h1>Selamat Datang di Klinik System</h1>
+        <h1>Selamat Datang di Klinik System hallo</h1>
         <p>Silakan login untuk mengakses sistem manajemen klinik.</p>
         <a href="{{ route('login') }}" class="btn btn-primary btn-login">Login</a>
     </div>
