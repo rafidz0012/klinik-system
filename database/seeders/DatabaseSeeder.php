@@ -2,68 +2,127 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // Buat role jika belum ada
-        // $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        // $petugasRole = Role::firstOrCreate(['name' => 'petugas']);
-        // $dokterRole = Role::firstOrCreate(['name' => 'dokter']);
-        // $kasirRole = Role::firstOrCreate(['name' => 'kasir']);
-        // Permission::create(['name' => 'view dashboard']);
-        // Permission::create(['name' => 'manage master data']);
-        // Permission::create(['name' => 'register pasien']);
-        // Permission::create(['name' => 'manage tindakan']);
-        // Permission::create(['name' => 'manage pembayaran']);
-        // Permission::create(['name' => 'view laporan']);
-        $admin = Role::findByName('admin');
-        $admin->givePermissionTo(Permission::all());
+        /**
+         * =========================
+         * 1. DEFINISI ROLE & PERMISSION
+         * =========================
+         */
+        $roles = [
+            'admin',
+            'petugas',
+            'dokter',
+            'kasir',
+        ];
 
-        $petugas = Role::findByName('petugas');
-        $petugas->givePermissionTo(['view dashboard','register pasien']);
+        $permissions = [
+            'view dashboard',
+            'manage master data',
+            'register pasien',
+            'manage tindakan',
+            'manage pembayaran',
+            'view laporan',
+        ];
 
-        $dokter = Role::findByName('dokter');
-        $dokter->givePermissionTo(['view dashboard','manage tindakan']);
+        /**
+         * =========================
+         * 2. BUAT ROLE (IDEMPOTENT)
+         * =========================
+         */
+        foreach ($roles as $roleName) {
+            Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
+        }
 
-        $kasir = Role::findByName('kasir');
-        $kasir->givePermissionTo(['view dashboard','manage pembayaran']);
+        /**
+         * =========================
+         * 3. BUAT PERMISSION (IDEMPOTENT)
+         * =========================
+         */
+        foreach ($permissions as $permissionName) {
+            Permission::firstOrCreate([
+                'name' => $permissionName,
+                'guard_name' => 'web',
+            ]);
+        }
 
-        // Buat user dan assign role
-        // $admin = User::firstOrCreate(
-        //     ['email' => 'admin@example.com'],
-        //     ['name' => 'Admin', 'password' => bcrypt('password123')]
-        // );
-        // $admin->assignRole($adminRole);
+        /**
+         * =========================
+         * 4. ASSIGN PERMISSION KE ROLE
+         * =========================
+         */
+        Role::findByName('admin')->syncPermissions(Permission::all());
 
-        // $petugas = User::firstOrCreate(
-        //     ['email' => 'petugas@example.com'],
-        //     ['name' => 'Petugas', 'password' => bcrypt('password123')]
-        // );
-        // $petugas->assignRole($petugasRole);
+        Role::findByName('petugas')->syncPermissions([
+            'view dashboard',
+            'register pasien',
+        ]);
 
-        // $dokter = User::firstOrCreate(
-        //     ['email' => 'dokter@example.com'],
-        //     ['name' => 'Dokter', 'password' => bcrypt('password123')]
-        // );
-        // $dokter->assignRole($dokterRole);
+        Role::findByName('dokter')->syncPermissions([
+            'view dashboard',
+            'manage tindakan',
+        ]);
 
-        // $kasir = User::firstOrCreate(
-        //     ['email' => 'kasir@example.com'],
-        //     ['name' => 'Kasir', 'password' => bcrypt('password123')]
-        // );
-        // $kasir->assignRole($kasirRole);
+        Role::findByName('kasir')->syncPermissions([
+            'view dashboard',
+            'manage pembayaran',
+        ]);
+
+        /**
+         * =========================
+         * 5. BUAT USER & ASSIGN ROLE
+         * =========================
+         */
+        $users = [
+            [
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'password' => 'password123',
+                'role' => 'admin',
+            ],
+            [
+                'name' => 'Petugas',
+                'email' => 'petugas@example.com',
+                'password' => 'password123',
+                'role' => 'petugas',
+            ],
+            [
+                'name' => 'Dokter',
+                'email' => 'dokter@example.com',
+                'password' => 'password123',
+                'role' => 'dokter',
+            ],
+            [
+                'name' => 'Kasir',
+                'email' => 'kasir@example.com',
+                'password' => 'password123',
+                'role' => 'kasir',
+            ],
+        ];
+
+        foreach ($users as $data) {
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name' => $data['name'],
+                    'password' => Hash::make($data['password']),
+                ]
+            );
+
+            if (! $user->hasRole($data['role'])) {
+                $user->assignRole($data['role']);
+            }
+        }
     }
-
-
 }
